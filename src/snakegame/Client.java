@@ -11,17 +11,11 @@ import java.awt.Graphics;
 import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /**
@@ -30,10 +24,6 @@ import java.util.logging.Logger;
  */
 public class Client extends javax.swing.JFrame {
 
-    private static final int port = 9002;                           //port for connection
-    private static final int sendFrenquency = 300;                  //0.3 s
-    private static String newPlayer = "NEWPLAYER";
-    private static String newDirection = "NEWDIRECTION";
     private ArrayList<OnePlayer> players;
     private ArrayList<OnePlayer> lastPlayers;
     private PrintWriter out;
@@ -41,11 +31,6 @@ public class Client extends javax.swing.JFrame {
     private String name;
     private OnePlayer myself;
     private Apple apple;
-    
-    
-    /**
-     * Creates new form Server
-     */
     
     private class MyDispatcher implements KeyEventDispatcher {
         @Override
@@ -65,7 +50,6 @@ public class Client extends javax.swing.JFrame {
         
         KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
         manager.addKeyEventDispatcher(new MyDispatcher());
-        
     }
 
     /**
@@ -151,8 +135,7 @@ public class Client extends javax.swing.JFrame {
     private void jTextFieldNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldNameActionPerformed
         // TODO add your handling code here:
         name = jTextFieldName.getText();
-        out.println(newPlayer + ":" + name);                         //send new player command
-        printLog("name sent to server:" + name);
+        out.println(PublicData.newPlayer + ":" + name);                         //send new player command
         jTextFieldName.setEditable(false);                                                  //only one time     
     }//GEN-LAST:event_jTextFieldNameActionPerformed
 
@@ -170,10 +153,6 @@ public class Client extends javax.swing.JFrame {
         this.apple = new Apple();
     }
     
-    /**
-     * to get key and update direction
-     * @param e     key event
-     */
     public void getKeyDirection(KeyEvent e){
         switch (e.getKeyCode()) {
             case KeyEvent.VK_UP:
@@ -192,16 +171,13 @@ public class Client extends javax.swing.JFrame {
                 direction = myself.getDirection();
                 break;
         }
-        sendDirectionToServer();
+        sendDirectionToServer();                //whenever there is key respond, send the direction to server for update
     }
     
     public void printLog(String s){
         jTextAreaLog.append("\n" + s);
     }
     
-    /**
-     * @param args the command line arguments
-     */
     public static void main(String args[]) throws Exception{
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
@@ -247,12 +223,11 @@ public class Client extends javax.swing.JFrame {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-
-    }
+}
     
     public void runSocket() throws Exception{
         
-        Socket socket = new Socket("localhost", port);
+        Socket socket = new Socket("localhost", PublicData.port);
         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         out = new PrintWriter(socket.getOutputStream(),true);
         printLog("client starts");
@@ -264,8 +239,11 @@ public class Client extends javax.swing.JFrame {
                 continue;
             printLog("read line: " + line);
             String[] liveData = line.split(";");
-            lastPlayers.clear();
+            
+            lastPlayers.clear();                    //backup lastPlayers, to make refresh map more effeiciently
             lastPlayers.addAll(players);
+            
+            //reset current players from server
             players.clear();
             for(String s : liveData){
                 OnePlayer player = new OnePlayer(Color.white);
@@ -280,9 +258,8 @@ public class Client extends javax.swing.JFrame {
         }
     }
     
+    //refresh live score of left-down text area
     private void refreshLiveScore(){
-        if(players.isEmpty())
-            return;
         String liveScore = "";
         
         for(OnePlayer player : players){
@@ -291,49 +268,37 @@ public class Client extends javax.swing.JFrame {
         jTextAreaPlayers.setText(liveScore);
     }
     
-    private void resetBackground(Graphics g){
-        g.setColor(PublicData.BACKGROUND);
-        g.fillRect(0, 0, PublicData.WIDTH, PublicData.HEIGHT);
-    }
-    
+    //refresh live map of the game
     private void refreshLiveMap(){
         
-        /*
-        resetBackground(jPanelMap.getGraphics());
-        for(OnePlayer player : players){
-            player.paintSnakeBodies(jPanelMap.getGraphics());
-        }
-        */
-        
-        for(OnePlayer player : players){
-            if(player.getPlayerStatus() == PublicData.PLAYER_NEW){
+        for(OnePlayer player : players){                                //for each player
+            if(player.getPlayerStatus() == PublicData.PLAYER_NEW){      //if this player is a new player
                 for(OnePlayer lp : lastPlayers){
-                    if(lp.getName().equalsIgnoreCase(player.getName())){
-                        lp.clear(jPanelMap.getGraphics());
+                    if(lp.getName().equalsIgnoreCase(player.getName())){   
+                        lp.clear(jPanelMap.getGraphics());                  //clear old one
                     }
                 }
-            }else if(player.getPlayerStatus() == PublicData.PLAYER_REMOVETAIL){
+            }else if(player.getPlayerStatus() == PublicData.PLAYER_REMOVETAIL){ //if this player need remove tail
                 for(OnePlayer lp : lastPlayers){
                     if(lp.getName().equalsIgnoreCase(player.getName())){
-                        System.out.printf("new tail=%d, last tail=%d\n", player.getSnakeBodies().getFirst(), lp.getSnakeBodies().getFirst());
-                        lp.removeSnakeTail(jPanelMap.getGraphics());
+                        lp.removeSnakeTail(jPanelMap.getGraphics());            //remove tail of this player
                     }
                 }
             }
-            player.paintSnakeBodies(jPanelMap.getGraphics());
+            player.paintSnakeBodies(jPanelMap.getGraphics());                   //paint this snake; some painting work is unnecessary
             
         }
-        apple.setPosition(myself.getApplePosition());
-        apple.drawApple(jPanelMap.getGraphics());
-        
+        apple.setPosition(myself.getApplePosition());                           //set app position
+        apple.drawApple(jPanelMap.getGraphics());                               //draw apple in the map
         
     }
     
+    //send real time direction to server
     private void sendDirectionToServer(){
         myself.setDirection(direction, myself.getLastDirection());
         if(myself.getDirection() != myself.getLastDirection()) {     //if direction not change, no need to updaate at server side
-            printLog("Send direction to host: " + newDirection + ":" + Integer.toString(myself.getDirection()));
-            out.println(newDirection + ":" + Integer.toString(myself.getDirection()));
+            printLog("Send direction to host: " + PublicData.newDirection + ":" + Integer.toString(myself.getDirection()));
+            out.println(PublicData.newDirection + ":" + Integer.toString(myself.getDirection()));
         }
     }
      

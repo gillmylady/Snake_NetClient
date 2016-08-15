@@ -33,4 +33,8 @@ public class PublicData {
     public static int PLAYER_REMOVETAIL = 1;
     public static int PLAYER_KEEPTAIL = 2;
     
+    public static final int port = 9002;                           //port for connection
+    public static String newPlayer = "NEWPLAYER";
+    public static String newDirection = "NEWDIRECTION";
+    
 }
