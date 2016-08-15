@@ -20,6 +20,7 @@ public class OnePlayer {
     private int lastDirection;            //default last direction
     private int newHead;                //new head of this snake
     private int applePosition;              //apple's position
+    private int status;                     // 0-new player, 1-remove tail, 2-keep tail
     private Color color;                    //color of the snake body
     private LinkedList<Integer> snakeBodies;                //snake bodies
     
@@ -36,6 +37,7 @@ public class OnePlayer {
         snakeBodies.add(1);          //from left up corner of the map to right
         direction = PublicData.RIGHT;
         lastDirection = PublicData.RIGHT;
+        this.status = PublicData.PLAYER_NEW;
     }
     
     /**
@@ -99,6 +101,10 @@ public class OnePlayer {
     
     public void setColor(Color color){
         this.color = color;
+    }
+    
+    public int getPlayerStatus(){
+        return this.status;
     }
     
     public void calculateNewHead(){
@@ -168,10 +174,10 @@ public class OnePlayer {
      * @return 
      */
     public boolean hitWalls(){
-        return (direction == PublicData.UP && (snakeBodies.getFirst() / PublicData.COL) == 0) ||    //the first row
-                (direction == PublicData.DOWN && (snakeBodies.getFirst() / PublicData.COL) == (PublicData.ROW-1)) ||    //last row
-                (direction == PublicData.LEFT && (snakeBodies.getFirst() % PublicData.COL) == 0) ||         //first col
-                (direction == PublicData.RIGHT && (snakeBodies.getFirst() % PublicData.COL) == (PublicData.COL-1)) //last col
+        return (direction == PublicData.UP && (snakeBodies.getLast() / PublicData.COL) == 0) ||    //the first row
+                (direction == PublicData.DOWN && (snakeBodies.getLast() / PublicData.COL) == (PublicData.ROW-1)) ||    //last row
+                (direction == PublicData.LEFT && (snakeBodies.getLast() % PublicData.COL) == 0) ||         //first col
+                (direction == PublicData.RIGHT && (snakeBodies.getLast() % PublicData.COL) == (PublicData.COL-1)) //last col
 ;
     }
     
@@ -198,21 +204,29 @@ public class OnePlayer {
      * @return true if this snake eats the apple
      */
     public boolean checkMove(Graphics g){
+        //System.out.printf("in CheckMove, direction=%d, newHead=%d\n", direction, newHead);
         lastDirection = direction;
         snakeBodies.add(newHead);
         if(newHead != applePosition){               //not eat the apple
             removeSnakeTail(g);
             snakeBodies.remove();
+            this.status = PublicData.PLAYER_REMOVETAIL;
             return false;
         }else{
+            this.status = PublicData.PLAYER_KEEPTAIL;
             return true;
         }
     }
     
     public String showAsString(){
-        return name + ":" + Integer.toString(direction) + ":" + Integer.toString(lastDirection) + ":" + 
-                Integer.toString(newHead) + ":" + Integer.toString(applePosition) + ":" + Integer.toString(color.getRGB())
-                + ":" + snakeBodies.toString();
+        return name + ":" 
+                + Integer.toString(direction) + ":" 
+                + Integer.toString(lastDirection) + ":" 
+                + Integer.toString(newHead) + ":" 
+                + Integer.toString(applePosition) + ":" 
+                + Integer.toString(status) + ":"
+                + Integer.toString(color.getRGB()) + ":" 
+                + snakeBodies.toString();
     }
     
     public boolean setFromString(String s){
@@ -225,6 +239,7 @@ public class OnePlayer {
             this.lastDirection = Integer.parseInt(data[index++]);
             this.newHead = Integer.parseInt(data[index++]);
             this.applePosition = Integer.parseInt(data[index++]);
+            this.status = Integer.parseInt(data[index++]);
             this.color = new Color(Integer.parseInt(data[index++]));
             
             String subS = data[index].substring(1, data[index].length()-1);

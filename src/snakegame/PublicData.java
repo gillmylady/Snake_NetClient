@@ -29,4 +29,8 @@ public class PublicData {
     public static Color HEADCOLOR = Color.red;
     public static Color APPLECOLOR = Color.black;
     
+    public static int PLAYER_NEW = 0;
+    public static int PLAYER_REMOVETAIL = 1;
+    public static int PLAYER_KEEPTAIL = 2;
+    
 }

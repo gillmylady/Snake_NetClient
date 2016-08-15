@@ -35,6 +35,7 @@ public class Client extends javax.swing.JFrame {
     private static String newPlayer = "NEWPLAYER";
     private static String newDirection = "NEWDIRECTION";
     private ArrayList<OnePlayer> players;
+    private ArrayList<OnePlayer> lastPlayers;
     private PrintWriter out;
     private int direction;
     private String name;
@@ -123,7 +124,7 @@ public class Client extends javax.swing.JFrame {
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 320, Short.MAX_VALUE))
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 254, Short.MAX_VALUE)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 295, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jTextFieldName)
                         .addContainerGap())))
@@ -163,6 +164,7 @@ public class Client extends javax.swing.JFrame {
         this.setVisible(true);
         
         this.players = new ArrayList<>();
+        this.lastPlayers = new ArrayList<>();
         
         this.myself = new OnePlayer(Color.white);
         this.apple = new Apple();
@@ -262,6 +264,8 @@ public class Client extends javax.swing.JFrame {
                 continue;
             printLog("read line: " + line);
             String[] liveData = line.split(";");
+            lastPlayers.clear();
+            lastPlayers.addAll(players);
             players.clear();
             for(String s : liveData){
                 OnePlayer player = new OnePlayer(Color.white);
@@ -293,12 +297,36 @@ public class Client extends javax.swing.JFrame {
     }
     
     private void refreshLiveMap(){
+        
+        /*
         resetBackground(jPanelMap.getGraphics());
         for(OnePlayer player : players){
             player.paintSnakeBodies(jPanelMap.getGraphics());
         }
+        */
+        
+        for(OnePlayer player : players){
+            if(player.getPlayerStatus() == PublicData.PLAYER_NEW){
+                for(OnePlayer lp : lastPlayers){
+                    if(lp.getName().equalsIgnoreCase(player.getName())){
+                        lp.clear(jPanelMap.getGraphics());
+                    }
+                }
+            }else if(player.getPlayerStatus() == PublicData.PLAYER_REMOVETAIL){
+                for(OnePlayer lp : lastPlayers){
+                    if(lp.getName().equalsIgnoreCase(player.getName())){
+                        System.out.printf("new tail=%d, last tail=%d\n", player.getSnakeBodies().getFirst(), lp.getSnakeBodies().getFirst());
+                        lp.removeSnakeTail(jPanelMap.getGraphics());
+                    }
+                }
+            }
+            player.paintSnakeBodies(jPanelMap.getGraphics());
+            
+        }
         apple.setPosition(myself.getApplePosition());
         apple.drawApple(jPanelMap.getGraphics());
+        
+        
     }
     
     private void sendDirectionToServer(){
